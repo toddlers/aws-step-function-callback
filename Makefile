@@ -1,12 +1,16 @@
 ACCOUNT_ID=1234567890
 FUNCTION_NAME=handle_step_function
-EXECUTION_ROLE=arn:aws:iam::${ACCOUNT_ID}:role/${FUNCTION_NAME}
 IMAGE_NAME=randomname
+QUEUE_NAME=step-function-queue
+EXECUTION_ROLE=arn:aws:iam::${ACCOUNT_ID}:role/${FUNCTION_NAME}
 IMAGE_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}:latest
 ECR_REGISTRY=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 FUNCTION_ECR_REPOSITORY=${ECR_REGISTRY}/${IMAGE_NAME}:latest
-QUEUE_NAME=step-function-queue
 SQS_ARN=arn:aws:sqs:${AWS_REGION}:${ACCOUNT_ID}:${QUEUE_NAME}
+
+all:
+	@echo 'Available make targets:'
+	@grep '^[^#[:space:]].*:' Makefile
 
 clean:
 	rm -rf build
@@ -15,25 +19,38 @@ build: build-extension build-function ;
 
 build-function:
 	mkdir -p build
+	go fmt
 	GOOS=linux go build -o build/main main.go
-	# cp Dockerfile build/
-	cd build;docker build -t ${IMAGE_NAME} .
+	docker build -t ${IMAGE_NAME} .
 
 push-function-image: check-region-profile-set build-function
 	/usr/local/bin/aws ecr get-login-password --region ${AWS_REGION}| docker login --username AWS --password-stdin $(ECR_REGISTRY)
 	docker tag $(IMAGE_NAME):latest $(FUNCTION_ECR_REPOSITORY)
 	docker push $(FUNCTION_ECR_REPOSITORY)
 
-deploy-tf:
-	cd terraform && terraform init && terraform apply -var="imagename=${IMAGE_NAME}" \
+fmt-tf:
+	cd terraform && terraform fmt
+
+init-tf: fmt-tf
+	cd terraform && terraform init
+
+plan-tf: init-tf
+	terraform plan -var="imagename=${IMAGE_NAME}" \
         -var="lambda_function_name=${FUNCTION_NAME}"  \
 		-var="queue_name=${QUEUE_NAME}" \
 		-var="region=${AWS_REGION}"
 
-delete-function: check-region-profile-set
-	/usr/local/bin/aws lambda delete-function \
-		--region "${AWS_REGION}" \
-		--function-name "${FUNCTION_NAME}"
+deploy-tf: init-tf
+	terraform deploy -var="imagename=${IMAGE_NAME}" \
+        -var="lambda_function_name=${FUNCTION_NAME}"  \
+		-var="queue_name=${QUEUE_NAME}" \
+		-var="region=${AWS_REGION}"
+
+destroy-tf: init-tf
+	terraform destroy -var="imagename=${IMAGE_NAME}" \
+        -var="lambda_function_name=${FUNCTION_NAME}"  \
+		-var="queue_name=${QUEUE_NAME}" \
+		-var="region=${AWS_REGION}"
 
 create-function: check-region-profile-set check-role-arn-set deploy-tf push-function-image
 	/usr/local/bin/aws lambda create-function \
@@ -60,6 +77,11 @@ update-function:  check-region-profile-set check-role-arn-set build-function
 		--description "extension test" \
 		--region ${AWS_REGION}
 
+delete-function: check-region-profile-set
+	/usr/local/bin/aws lambda delete-function \
+		--region "${AWS_REGION}" \
+		--function-name "${FUNCTION_NAME}"
+
 check-region-profile-set:
 	if [ -z "${AWS_REGION}" ]; then \
         echo "AWS_REGION environment variable is not set."; exit 1; \
@@ -72,7 +94,6 @@ check-role-arn-set:
 	if [ -z "${EXECUTION_ROLE}" ]; then \
         echo "function execution role not set."; exit 1; \
     fi
-
 
 test: build
 	go test ./...
