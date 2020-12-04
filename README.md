@@ -32,7 +32,7 @@ Terraform v0.14.0
 ```
 - Go 1.12+: [Installing Go](https://golang.org/doc/install). GOPATH configuration is required: [Setting GOPATH environment variable](https://github.com/golang/go/wiki/SettingGOPATH)
 
-#### Testing locally
+## Testing locally
 
 To build you image:
 ```
