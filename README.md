@@ -50,4 +50,5 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d
 
 
 [1]https://aws.amazon.com/blogs/aws/new-for-aws-lambda-container-image-support/
+
 [2] https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html
