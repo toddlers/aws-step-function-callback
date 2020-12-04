@@ -11,7 +11,8 @@
   * Lambda function for getting a sample work done and informing back to Step Function. Lambda is deployed via the `container` image pattern which is 
   newly launched by AWS[1]
   
-* Deploying the lambda via the `Makefile` , don't want to create a spaghetti with `null_resource` in terraform.
+* Deploying the lambda via the `Makefile` , don't want to create a spaghetti with `null_resource` in terraform as I am creating the ECR in the same terraform code 
+and `lambda` can't be created without the image in place. So create `ECR`, build/push image and eventually create lambda with the same image. Added benefit of that is if we want to update the image separately , we can do by calling the `make` target `update-function`.
 
 
 #### Testing locally
