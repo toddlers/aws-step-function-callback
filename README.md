@@ -24,7 +24,7 @@ The workflow is captured in the following state machine:
 
 ## Prerequisites
 - AWS credentials profile and default region set locally
-- Latest AWS CLI[2]
+- [AWS CLI](https://aws.amazon.com/cli/) for deployment
 - Terraform 
 ```
 Terraform v0.14.0
@@ -49,6 +49,11 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d
 ```
 
 
-[1]https://aws.amazon.com/blogs/aws/new-for-aws-lambda-container-image-support/
+## Run
+```
+    aws stepfunctions start-execution --state-machine-arn <STATE_MACHINE_ARN> \
+      --input "{\"Comment\": \"Callback test\"}"
+ ```
+      
 
-[2] https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html
+[1]https://aws.amazon.com/blogs/aws/new-for-aws-lambda-container-image-support/
