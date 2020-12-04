@@ -20,7 +20,3 @@ variable "lambda_function_name" {
 variable "region" {
   type = string
 }
-
-# variable "ecreponame" {
-#   type = string
-# }
