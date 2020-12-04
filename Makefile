@@ -24,7 +24,7 @@ build-function:
 	docker build -t ${IMAGE_NAME} .
 
 push-function-image: check-region-profile-set build-function
-	/usr/local/bin/aws ecr get-login-password --region ${AWS_REGION}| docker login --username AWS --password-stdin $(ECR_REGISTRY)
+	aws ecr get-login-password --region ${AWS_REGION}| docker login --username AWS --password-stdin $(ECR_REGISTRY)
 	docker tag $(IMAGE_NAME):latest $(FUNCTION_ECR_REPOSITORY)
 	docker push $(FUNCTION_ECR_REPOSITORY)
 
@@ -53,7 +53,7 @@ destroy-tf: init-tf
 		-var="region=${AWS_REGION}"
 
 create-function: check-region-profile-set check-role-arn-set deploy-tf push-function-image
-	/usr/local/bin/aws lambda create-function \
+	aws lambda create-function \
 		--function-name "${FUNCTION_NAME}" \
 		--role "${EXECUTION_ROLE}" \
 		--region "${AWS_REGION}" \
@@ -65,20 +65,20 @@ create-function: check-region-profile-set check-role-arn-set deploy-tf push-func
 		--event-source-arn ${SQS_ARN}
 
 update-function:  check-region-profile-set check-role-arn-set build-function
-	/usr/local/bin/aws lambda update-function-code \
+	aws lambda update-function-code \
 		--function-name "${FUNCTION_NAME}" \
 		--image-uri "${IMAGE_URI}" \
 		--region ${AWS_REGION}
 	# uploading a new image takes some time for the lambda to digest that. so sleep and
 	# then try to publish the version
 	sleep 60
-	/usr/local/bin/aws lambda publish-version \
+	aws lambda publish-version \
 		--function-name "${FUNCTION_NAME}" \
 		--description "extension test" \
 		--region ${AWS_REGION}
 
 delete-function: check-region-profile-set
-	/usr/local/bin/aws lambda delete-function \
+	aws lambda delete-function \
 		--region "${AWS_REGION}" \
 		--function-name "${FUNCTION_NAME}"
 
